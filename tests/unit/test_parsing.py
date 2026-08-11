@@ -84,14 +84,17 @@ def test_image_parser_mocked(tmp_path):
     mock_image = MagicMock()
     mock_image.size = (800, 600)
 
+    mock_pytesseract = MagicMock()
+    mock_pytesseract.image_to_string.return_value = " Extracted text from OCR. "
+
     with (
         patch("PIL.Image.open", return_value=mock_image),
-        patch("pytesseract.image_to_string", return_value=" Extracted text from OCR. ") as mock_ocr,
+        patch.dict("sys.modules", {"pytesseract": mock_pytesseract}),
     ):
         parser = ImageParser(min_content_chars=5)
         pages = parser.parse(img_file)
 
-        mock_ocr.assert_called_once()
+        mock_pytesseract.image_to_string.assert_called_once()
         assert len(pages) == 1
         assert pages[0].content == "Extracted text from OCR."
         assert pages[0].page_number is None
