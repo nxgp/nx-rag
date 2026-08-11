@@ -1,0 +1,5 @@
+# Development + evaluation dependencies. Mirrors the dev/eval extras in pyproject.toml.
+#   pip install -e ".[dev,eval]"
+# Add "local" for open-source embeddings/rerankers/LLMs, "medical" for scispaCy:
+#   pip install -e ".[dev,eval,local,medical]"
+-e .[dev,eval]

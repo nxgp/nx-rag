@@ -1,0 +1,17 @@
+# Cursor — project instructions
+
+This repository uses a cross-agent operating system so work done by Cursor, Claude Code, Gemini
+CLI, and Codex stays in sync without any of them sharing memory. Before writing any code, read
+and follow `.ai/BOOTSTRAP.md` in full.
+
+That procedure has you read `.ai/PROJECT.md`, `.ai/STATE.md`, `.ai/TASKS.md`, and
+`.ai/ARCHITECTURE.md`; check `.ai/FILE_INDEX.md` before creating any file; and produce a short
+plan before coding. It also defines exactly when to stop and ask instead of guessing.
+
+Before ending the session, run `.ai/SHUTDOWN.md` in full. It updates the task board, file
+index, and changelog, and writes a session record under `.ai/sessions/` so the next agent — in
+this tool or a different one — can pick up without anyone re-explaining anything.
+
+Hard constraints that apply on every task: `.ai/RULES.md`.
+
+Full system map: `.ai/README.md`.

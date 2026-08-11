@@ -1,0 +1,59 @@
+# Skeleton compose file. Qdrant and MLflow are functional and can be
+# brought up today (`docker compose up qdrant mlflow`). The `api` service
+# is a documented placeholder — its Dockerfile and command are built in Milestone 6
+# (see docs/planning/roadmap.md). Everything runs in containers; nothing is installed
+# on the host.
+#
+# Validate this file without starting anything:  docker compose config
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    ports:
+      - "6333:6333"   # REST + dashboard
+      - "6334:6334"   # gRPC
+    volumes:
+      - ./volumes/qdrant:/qdrant/storage
+    stop_grace_period: 2s
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/readyz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.17.2
+    command: >
+      mlflow server
+      --host 0.0.0.0 --port 5000
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./volumes/mlflow:/mlflow
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')\" || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # api — placeholder. Uncomment and complete in Milestone 6 once the FastAPI
+  # service and its Dockerfile exist. AWS credentials are supplied via a mounted
+  # profile or environment, never baked into the image.
+  # ---------------------------------------------------------------------------
+  # api:
+  #   build: .
+  #   env_file: .env
+  #   environment:
+  #     QDRANT_URL: http://qdrant:6333
+  #     MLFLOW_TRACKING_URI: http://mlflow:5000
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     qdrant:
+  #       condition: service_healthy
+  #     mlflow:
+  #       condition: service_healthy
+
