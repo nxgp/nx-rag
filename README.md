@@ -1,23 +1,21 @@
-# Production Medical RAG & Evaluation Pipeline (v1.0.0)
+# Mentera RAG Pipeline
 
-A production-ready, enterprise-grade **Medical Retrieval-Augmented Generation (RAG) Architecture and Evaluation System** built with Python 3.11, FastAPI, Qdrant, Weaviate, LangGraph, SentenceTransformers, Groq API, and MLflow.
+A production-grade, cloud-agnostic, multi-tenant **Retrieval-Augmented Generation (RAG) Context Pipeline** built with Python 3.11+, FastAPI, Qdrant, AWS Bedrock, Azure OpenAI, GCP Vertex AI, and MLflow.
+
+Serves retrieved context with strict tenant payload isolation to downstream Agent and LLM applications.
 
 ---
 
-## 🌟 Key Features & System Capabilities
+## 🌟 Key Features & Capabilities
 
-- **Modular Architecture**: Layered design decoupling Ingestion, Chunking, Embedding, Vector Stores, Retrievers, LLMs, and Evaluation.
-- **Hybrid Search & Fusion**: Dense vector similarity + BM25 Okapi lexical matching merged via weighted Reciprocal Rank Fusion (RRF).
-- **GPU Accelerated Reranking**: CUDA-accelerated cross-encoder reranker for context precision optimization.
-- **Dual RAG Orchestration**:
-  - **Linear RAG Pipeline**: Low-latency ($\sim 400\text{ms}$) direct synthesis flow.
-  - **Agentic RAG Graph (LangGraph)**: Self-correcting state graph with document relevance grading and adaptive query rewriting loops.
-- **3-Layer Evaluation Harness**:
-  - **Layer 1 (IR Metrics)**: $MRR@K$, $NDCG@K$, $Precision@K$, $Recall@K$ via `ranx`.
-  - **Layer 2 (LLM Quality)**: $Faithfulness$ (hallucination detection) and $Answer\ Relevance$.
-  - **Layer 3 (System)**: End-to-end latency, index build time, token counts, cost tracking.
-- **MLflow Experiment Sweep Runner (M8)**: Automated Cartesian product matrix benchmarking across vector DBs, embedding models, chunking strategies, and orchestration types with MLflow run caching and automated Markdown report generation (`reports/comparison_report.md`).
-- **Production REST API (FastAPI)**: Serves clinical queries (`/query`), triggers CI/CD evaluation sweeps (`/evaluate`), and logs physician ratings (`/feedback`).
+- **Multi-Tenant Isolation**: Single shared Qdrant collection isolated via mandatory `tenant_id`, `provider_id`, and optional `patient_id` payload filters on every query.
+- **Direct Cloud Upload Flow**: Presigned upload URL architecture (`POST /upload/presign`) decoupling file transfer from API execution for arbitrarily large files.
+- **Document Parsing Suite**: Automated parsers for PDF (PyMuPDF), Plain Text, Markdown, and Image OCR (Tesseract). Includes SHA-256 content deduplication.
+- **Multi-Cloud Embeddings**: Pluggable embedding providers for AWS Bedrock (Titan v2, Cohere Embed v3), Azure OpenAI (`text-embedding-3-small`/`large`), and GCP Vertex AI (`text-embedding-005`).
+- **Hybrid Retrieval & RRF Fusion**: Dense vector similarity + BM25 lexical retrieval merged via weighted Reciprocal Rank Fusion (RRF) and Cross-Encoder reranking.
+- **Dual Orchestration**: Low-latency linear context pipeline and self-correcting agentic state graph (LangGraph) with document relevance grading and adaptive query re-writing.
+- **Observability & Experiments**: MLflow experiment tracking matrix benchmarking retrieval configuration variations.
+- **Production FastAPI REST API**: Endpoints for presigning uploads (`/upload/presign`), triggering ingestion (`/ingest`), querying context (`/query`), and component health checks (`/health`).
 
 ---
 
@@ -25,6 +23,28 @@ A production-ready, enterprise-grade **Medical Retrieval-Augmented Generation (R
 
 ![System Architecture](./assets/architectural_diagram.jpg)
 
+### Presigned Upload Architecture Flow
+```
+┌──────────┐   1. Request presigned URL    ┌─────────────────┐
+│  Browser │─────────────────────────────▶│  POST /upload/  │
+│  Client  │◀─────────────────────────────│  presign        │
+│          │   2. Return presigned URL    │  (FastAPI)      │
+│          │                              └─────────────────┘
+│          │   3. PUT file directly
+│          │─────────────────────────────▶┌─────────────────┐
+│          │                              │  Cloud Storage  │
+│          │                              │ (S3/Blob/GCS)   │
+│          │                              └────────┬────────┘
+│          │   4. POST /ingest with                │
+│          │      storage_key + metadata           │
+│          │─────────────────────────────▶┌────────▼────────┐
+└──────────┘                              │  POST /ingest   │
+                                          │  (FastAPI)      │
+                                          │  Download →Parse│
+                                          │  → Chunk →Embed │
+                                          │  → Index Qdrant │
+                                          └─────────────────┘
+```
 
 ---
 
@@ -33,112 +53,89 @@ A production-ready, enterprise-grade **Medical Retrieval-Augmented Generation (R
 ### Prerequisites
 - Python 3.11+
 - Docker & Docker Compose
-- NVIDIA GPU (Optional, CUDA supported for embeddings/reranking)
 
-### 1. Environment Setup & Installation
+### 1. Installation
 
 ```bash
 # Clone the repository
-cd rag_evaluation_pipeline
+git clone git@github.com:nxgp/nx-rag.git
+cd RAG
 
-# Create python virtual environment
-python3.11 -m venv .venv
+# Create virtual environment
+python3 -m venv .venv
 source .venv/bin/activate
 
-# Install dependencies in editable mode
+# Install package and optional dependencies
 pip install --upgrade pip hatchling
-pip install -e .
+pip install -e ".[ocr,dev]"
 ```
 
 ### 2. Configure Environment Variables
 
 ```bash
 cp .env.example .env
-# Set GROQ_API_KEY and MLFLOW_TRACKING_URI in .env
+# Edit .env with your Qdrant, cloud storage, and embedding provider credentials
 ```
 
-### 3. Start Local Microservices (Qdrant, Weaviate, MLflow)
+### 3. Start Infrastructure Microservices (Qdrant & MLflow)
 
 ```bash
-docker-compose up -d
+make up
 ```
 
-Services will be running at:
+Services will be accessible at:
 - **Qdrant Vector Store**: `http://localhost:6333`
-- **Weaviate Vector Store**: `http://localhost:8080`
 - **MLflow Tracking UI**: `http://localhost:5000`
 
 ---
 
-## ⚡ Running the FastAPI Server
+## ⚡ Running the API Service
 
-Start the REST API server:
+Start the FastAPI server:
 
 ```bash
-uvicorn rag_eval.api.main:app --reload --port 8000
+uvicorn mentera_rag.api.main:app --reload --port 8000
 ```
 
-Access interactive Swagger documentation at:
+Access interactive API documentation at:
 👉 **`http://localhost:8000/docs`**
 
-### REST API Endpoints:
-- `POST /query`: Execute medical RAG query (Linear or Agentic).
-- `POST /evaluate`: Trigger evaluation suite and log run to MLflow.
-- `POST /feedback`: Log physician ratings (1-5 stars) to MLflow.
-
----
-
-## 🧪 Running Matrix Experiment Sweeps (M8)
-
-Execute automated matrix expansion and evaluation sweeps:
-
-```bash
-python scripts/test_pipeline_m0_to_m8.py
-```
-
-Generated production recommendation report will be saved to:
-📄 **`reports/comparison_report.md`**
+### Core Endpoints:
+- `POST /upload/presign`: Request presigned upload URL and storage key for cloud storage.
+- `POST /ingest`: Trigger ingestion pipeline (download, parse, chunk, embed, index) for uploaded object.
+- `POST /query`: Retrieve top-k context chunks with tenant payload filtering (`tenant_id`, `provider_id`).
+- `GET /health`: Component-level health check (Qdrant + Cloud Storage).
 
 ---
 
 ## 🛡️ Testing & Quality Gates
 
-Run all quality checks and unit tests:
+Run all quality checks, static analysis, and tests:
 
 ```bash
 make check
 ```
 
-Or run individual commands:
+Or run individual gates manually:
 
 ```bash
-# Code linting & formatting
+# Code linting & formatting (Ruff)
 ruff check .
 ruff format --check .
 
-# Type checking
+# Static type checking (Mypy)
 mypy src/
 
-# Security audit
-bandit -r src/
+# Security audit (Bandit)
+bandit -r src/ -x tests/
 
-# Run unit & integration tests
-pytest --cov=src/rag_eval tests/
-```
-
----
-
-## 🐳 Docker Deployment
-
-Build and run the production container:
-
-```bash
-docker build -t rag-eval:1.0.0 .
-docker run -p 8000:8000 --env-file .env rag-eval:1.0.0
+# Automated unit & integration test suite (Pytest)
+pytest --cov=src/mentera_rag tests/
 ```
 
 ---
 
 ## 📄 License & Version
-- **Version**: `1.0.0`
+- **Version**: `2.0.0`
+- **Package**: `mentera_rag`
 - **License**: MIT
