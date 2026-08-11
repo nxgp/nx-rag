@@ -5,6 +5,7 @@ Establishes standard contracts for retrieving chunks and re-scoring them.
 """
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 from mentera_rag.chunking.schemas import Chunk
 
@@ -15,7 +16,9 @@ class BaseRetriever(ABC):
     """
 
     @abstractmethod
-    def retrieve(self, query: str, top_k: int = 10, filters: dict | None = None) -> list[Chunk]:
+    def retrieve(
+        self, query: str, top_k: int = 10, filters: dict[str, Any] | None = None
+    ) -> list[Chunk]:
         """
         Retrieve top-k relevant text chunks for a query string.
 

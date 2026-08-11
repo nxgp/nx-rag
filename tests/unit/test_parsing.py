@@ -1,12 +1,12 @@
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from mentera_rag.parsing.base import ParsedPage
+import pytest
+
+from mentera_rag.parsing.factory import ParserFactory
+from mentera_rag.parsing.image_parser import ImageParser
 from mentera_rag.parsing.pdf_parser import PDFParser
 from mentera_rag.parsing.text_parser import TextParser
-from mentera_rag.parsing.image_parser import ImageParser
-from mentera_rag.parsing.factory import ParserFactory
 
 
 @pytest.fixture
@@ -84,11 +84,14 @@ def test_image_parser_mocked(tmp_path):
     mock_image = MagicMock()
     mock_image.size = (800, 600)
 
-    with patch("PIL.Image.open", return_value=mock_image), \
-         patch("pytesseract.image_to_string", return_value=" Extracted text from OCR. ") as mock_ocr:
+    with (
+        patch("PIL.Image.open", return_value=mock_image),
+        patch("pytesseract.image_to_string", return_value=" Extracted text from OCR. ") as mock_ocr,
+    ):
         parser = ImageParser(min_content_chars=5)
         pages = parser.parse(img_file)
 
+        mock_ocr.assert_called_once()
         assert len(pages) == 1
         assert pages[0].content == "Extracted text from OCR."
         assert pages[0].page_number is None

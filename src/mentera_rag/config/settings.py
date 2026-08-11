@@ -92,15 +92,13 @@ class Settings(BaseSettings):
     STORAGE_BUCKET: str = Field(
         default="mentera-uploads", description="Cloud storage bucket / container name"
     )
-    STORAGE_PREFIX: str = Field(
-        default="uploads/", description="Key prefix for all stored objects"
-    )
+    STORAGE_PREFIX: str = Field(default="uploads/", description="Key prefix for all stored objects")
 
     # -------------------------------------------------------------------------
     # Upload & Ingestion
     # -------------------------------------------------------------------------
     UPLOAD_DIR: str = Field(
-        default="/tmp/mentera_uploads",
+        default="/tmp/mentera_uploads",  # nosec B108
         description="Local staging directory for downloaded files during ingestion",
     )
     MAX_UPLOAD_SIZE_MB: int = Field(

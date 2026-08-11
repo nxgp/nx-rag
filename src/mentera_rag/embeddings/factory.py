@@ -89,6 +89,5 @@ class EmbeddingFactory:
             )
 
         raise ValueError(
-            f"Unsupported embedding provider: '{p_type}'. "
-            "Choose one of: 'bedrock', 'azure', 'gcp'."
+            f"Unsupported embedding provider: '{p_type}'. Choose one of: 'bedrock', 'azure', 'gcp'."
         )

@@ -8,6 +8,8 @@ Uses lazy imports to prevent dependency failures on systems without the GCP SDK.
 
 import logging
 from datetime import timedelta
+from typing import Any
+
 from mentera_rag.storage.base import BaseObjectStore
 
 logger = logging.getLogger(__name__)
@@ -23,15 +25,15 @@ class GCSStorageStore(BaseObjectStore):
         Initialize the GCS Storage backend.
 
         Args:
-            bucket_name: Name of the GCS bucket.
-            credentials_path: Path to service account JSON key file (optional).
+            bucket_name: GCS bucket name.
+            credentials_path: Path to GCP service account JSON key file (optional).
         """
         self.bucket_name = bucket_name
         self.credentials_path = credentials_path
         self._client = None
 
     @property
-    def client(self):
+    def client(self) -> Any:
         """Lazy-initialize GCS client."""
         if self._client is None:
             try:

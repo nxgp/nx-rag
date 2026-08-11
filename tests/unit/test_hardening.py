@@ -1,8 +1,9 @@
 import json
 import logging
+
 import pytest
-from unittest.mock import MagicMock
 from fastapi import HTTPException
+
 from mentera_rag.utils.logging import StructuredJSONFormatter, request_id_var
 from mentera_rag.utils.rate_limit import TokenBucketRateLimiter
 

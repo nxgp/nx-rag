@@ -66,7 +66,7 @@ class PDFParser(BaseDocumentParser):
 
         for page_index in range(total_pages):
             page = doc[page_index]
-            text: str = page.get_text("text")  # type: ignore[attr-defined]
+            text: str = page.get_text("text")
             text = text.strip()
 
             if len(text) < self.min_page_chars:

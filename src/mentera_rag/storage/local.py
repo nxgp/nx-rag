@@ -5,8 +5,8 @@ Simulates cloud object storage by writing files directly to the local filesystem
 Useful for development, testing, and deployment configurations without cloud dependencies.
 """
 
-import os
 from pathlib import Path
+
 from mentera_rag.storage.base import BaseObjectStore
 
 
@@ -15,7 +15,7 @@ class LocalStorageStore(BaseObjectStore):
     Simulates object storage using the local file system.
     """
 
-    def __init__(self, root_dir: str = "/tmp/mentera_storage"):
+    def __init__(self, root_dir: str = "/tmp/mentera_storage"):  # nosec B108
         """
         Initialize local storage simulator.
 

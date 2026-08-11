@@ -73,7 +73,11 @@ class QdrantVectorStore(BaseVectorStore):
                     distance=models.Distance.COSINE,
                 ),
             )
-            logger.info("Created Qdrant collection '%s' (dim=%d).", self.collection_name, self.dimension)
+            logger.info(
+                "Created Qdrant collection '%s' (dim=%d).", self.collection_name, self.dimension
+            )
+
+        import contextlib
 
         # Create keyword payload indexes for fast tenant-filtered queries
         indexed_keyword_fields = [
@@ -84,26 +88,21 @@ class QdrantVectorStore(BaseVectorStore):
             "collection_name",
         ]
         for field_name in indexed_keyword_fields:
-            try:
+            with contextlib.suppress(Exception):
                 self.client.create_payload_index(
                     collection_name=self.collection_name,
                     field_name=field_name,
                     field_schema=models.PayloadSchemaType.KEYWORD,
                 )
                 logger.debug("Payload index created: %s", field_name)
-            except Exception:
-                # Index may already exist — safe to ignore
-                pass
 
         # Create datetime index on upload_timestamp for time-range queries
-        try:
+        with contextlib.suppress(Exception):
             self.client.create_payload_index(
                 collection_name=self.collection_name,
                 field_name="upload_timestamp",
                 field_schema=models.PayloadSchemaType.DATETIME,
             )
-        except Exception:
-            pass
 
     def index_chunks(self, chunks: list[Chunk], vectors: list[list[float]]) -> None:
         """
@@ -259,9 +258,7 @@ class QdrantVectorStore(BaseVectorStore):
             range(len(dense_results)), key=lambda i: float(bm25_scores[i]), reverse=True
         )
         dense_ranks = {res.chunk_id: rank + 1 for rank, res in enumerate(dense_results)}
-        bm25_ranks = {
-            dense_results[idx].chunk_id: rank + 1 for rank, idx in enumerate(bm25_ranked)
-        }
+        bm25_ranks = {dense_results[idx].chunk_id: rank + 1 for rank, idx in enumerate(bm25_ranked)}
 
         fused: list[VectorSearchResult] = []
         for res in dense_results:

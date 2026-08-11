@@ -5,8 +5,8 @@ Executes parameter sweeps combinations sequentially over Qdrant collections
 and logs metrics (IR retrieval quality, indexing latencies) to MLflow.
 """
 
-import time
 import logging
+import time
 from typing import Any
 
 from mentera_rag.chunking.recursive import RecursiveCharacterChunker

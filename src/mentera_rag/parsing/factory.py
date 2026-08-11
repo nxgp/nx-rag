@@ -23,7 +23,7 @@ _EXTENSION_MAP: dict[str, type[BaseDocumentParser]] = {
     ".txt": TextParser,
     ".md": TextParser,
     ".markdown": TextParser,
-    **{ext: ImageParser for ext in SUPPORTED_IMAGE_EXTENSIONS},
+    **dict.fromkeys(SUPPORTED_IMAGE_EXTENSIONS, ImageParser),
 }
 
 SUPPORTED_EXTENSIONS: frozenset[str] = frozenset(_EXTENSION_MAP.keys())

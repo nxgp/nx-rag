@@ -70,14 +70,14 @@ class PubMedQALoader(BaseDatasetLoader):
 
             queries.append(
                 Query(
-                    id=query_id,
+                    query_id=query_id,
                     text=question_text,
-                    gold_answer=long_answer,
-                    source="pubmedqa",
                     metadata={
                         "pmid": pmid,
                         "final_decision": item.get("final_decision", ""),
                         "meshes": meshes,
+                        "gold_answer": long_answer,
+                        "source": "pubmedqa",
                     },
                 )
             )
@@ -93,6 +93,9 @@ class PubMedQALoader(BaseDatasetLoader):
                             title=f"PubMed Abstract {pmid} - Section {section_label}",
                             text=passage,
                             source="pubmedqa",
+                            tenant_id="legacy_pubmedqa",
+                            provider_id="pubmed",
+                            document_type="txt",
                             metadata={
                                 "pmid": pmid,
                                 "section_label": section_label,
@@ -102,6 +105,6 @@ class PubMedQALoader(BaseDatasetLoader):
                     )
                     seen_doc_ids.add(doc_id)
 
-                qrels.append(Qrel(query_id=query_id, document_id=doc_id, relevance=1))
+                qrels.append(Qrel(query_id=query_id, doc_id=doc_id, relevance=1))
 
         return documents, queries, qrels

@@ -72,7 +72,8 @@ class RecursiveCharacterChunker(BaseChunker):
                 chunk_index=index,
                 start_char=start_char if start_char != -1 else None,
                 end_char=end_char,
-                page_number=None,  # Text/MD files have no page numbers; PDF pages handled externally
+                # Text/MD files have no page numbers; PDF pages handled externally
+                page_number=None,
                 extra_metadata={
                     "strategy": "recursive_character",
                     "chunk_size_target": self.chunk_size,

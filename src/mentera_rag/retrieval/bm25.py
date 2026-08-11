@@ -4,6 +4,8 @@ Sparse BM25 Retriever Implementation (M5).
 Uses BM25Okapi term frequency-inverse document frequency matching over text chunks.
 """
 
+from typing import Any
+
 from rank_bm25 import BM25Okapi
 
 from mentera_rag.chunking.schemas import Chunk
@@ -22,12 +24,15 @@ class BM25Retriever(BaseRetriever):
         corpus_tokens = [c.text.lower().split() for c in self.chunks]
         self.bm25 = BM25Okapi(corpus_tokens)
 
-    def retrieve(self, query: str, top_k: int = 10, filters: dict | None = None) -> list[Chunk]:
+    def retrieve(
+        self, query: str, top_k: int = 10, filters: dict[str, Any] | None = None
+    ) -> list[Chunk]:
         """Tokenize query and return top-k BM25 keyword matches, applying filters if provided."""
         filtered_chunks = self.chunks
         if filters:
             filtered_chunks = [
-                c for c in self.chunks
+                c
+                for c in self.chunks
                 if all(
                     (getattr(c, k, None) == v or c.metadata.get(k) == v)
                     for k, v in filters.items()

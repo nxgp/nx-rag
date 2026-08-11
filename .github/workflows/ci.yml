@@ -1,4 +1,4 @@
-name: Medical RAG Evaluation Pipeline CI
+name: Mentera RAG Pipeline CI
 
 on:
   push:
@@ -45,4 +45,4 @@ jobs:
         env:
           ENV: test
         run: |
-          pytest --cov=src/rag_eval tests/
+          pytest --cov=src/mentera_rag tests/

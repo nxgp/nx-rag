@@ -8,8 +8,6 @@ and BedrockReranker. All retrievers support tenant filtering.
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from mentera_rag.chunking.schemas import Chunk
 from mentera_rag.retrieval.bm25 import BM25Retriever
 from mentera_rag.retrieval.dense import DenseRetriever
@@ -42,7 +40,9 @@ class TestDenseRetriever:
         ]
 
         retriever = DenseRetriever(embed_provider=mock_embed, vector_store=mock_store)
-        results = retriever.retrieve("What is heart treatment?", top_k=1, filters={"tenant_id": "tenant123"})
+        results = retriever.retrieve(
+            "What is heart treatment?", top_k=1, filters={"tenant_id": "tenant123"}
+        )
 
         assert len(results) == 1
         assert results[0].chunk_id == "c1"
@@ -81,7 +81,9 @@ class TestBM25Retriever:
         chunks = [c1, c2]
 
         retriever = BM25Retriever(chunks=chunks)
-        results = retriever.retrieve("asthma inhalers", top_k=1, filters={"provider_id": "provider456"})
+        results = retriever.retrieve(
+            "asthma inhalers", top_k=1, filters={"provider_id": "provider456"}
+        )
 
         assert len(results) == 1
         assert results[0].chunk_id == "c1"
@@ -123,7 +125,9 @@ class TestEnsembleRetriever:
         # RRF scores should tie, returning unique chunks
         retrieved_ids = {r.chunk_id for r in results}
         assert retrieved_ids == {"c1", "c2"}
-        mock_ret1.retrieve.assert_called_once_with("query", top_k=4, filters={"tenant_id": "tenant123"})
+        mock_ret1.retrieve.assert_called_once_with(
+            "query", top_k=4, filters={"tenant_id": "tenant123"}
+        )
 
 
 class TestLocalReranker:

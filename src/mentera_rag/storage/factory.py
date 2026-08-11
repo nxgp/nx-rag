@@ -6,12 +6,13 @@ based on settings.py settings.
 """
 
 import os
+
 from mentera_rag.config.settings import settings
+from mentera_rag.storage.azure_blob import AzureBlobStorageStore
 from mentera_rag.storage.base import BaseObjectStore
+from mentera_rag.storage.gcs import GCSStorageStore
 from mentera_rag.storage.local import LocalStorageStore
 from mentera_rag.storage.s3 import S3StorageStore
-from mentera_rag.storage.azure_blob import AzureBlobStorageStore
-from mentera_rag.storage.gcs import GCSStorageStore
 
 
 class StorageFactory:
@@ -35,7 +36,7 @@ class StorageFactory:
 
         if p_type == "local":
             # Resolves storage root dir from env, settings, or default temp path
-            storage_root = os.getenv("LOCAL_STORAGE_DIR", "/tmp/mentera_storage")
+            storage_root = os.getenv("LOCAL_STORAGE_DIR", "/tmp/mentera_storage")  # nosec B108
             return LocalStorageStore(root_dir=storage_root)
 
         elif p_type == "s3":

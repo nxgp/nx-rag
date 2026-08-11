@@ -1,8 +1,10 @@
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
+
 from mentera_rag.chunking.schemas import Chunk
-from mentera_rag.orchestration.linear import LinearRAGPipeline
 from mentera_rag.orchestration.agentic import AgenticRAGGraph
+from mentera_rag.orchestration.linear import LinearRAGPipeline
 
 
 @pytest.fixture

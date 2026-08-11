@@ -3,7 +3,9 @@ Unit tests for the updated FastAPI REST Service endpoints.
 """
 
 from unittest.mock import MagicMock, patch
+
 from fastapi.testclient import TestClient
+
 from mentera_rag.api.main import app
 
 client = TestClient(app)
@@ -34,7 +36,9 @@ def test_presign_endpoint_success(mock_get_storage):
     """Test generating a presigned URL successfully."""
     mock_storage = MagicMock()
     mock_get_storage.return_value = mock_storage
-    mock_storage.generate_presigned_upload_url.return_value = "https://mockbucket.s3.amazonaws.com/test_key?signature"
+    mock_storage.generate_presigned_upload_url.return_value = (
+        "https://mockbucket.s3.amazonaws.com/test_key?signature"
+    )
 
     payload = {
         "filename": "clinical_guideline.pdf",
@@ -111,6 +115,7 @@ def test_query_endpoint(mock_get_qdrant, mock_get_embedding):
 
     mock_qdrant = MagicMock()
     from mentera_rag.vector_stores.schemas import VectorSearchResult
+
     mock_qdrant.search_hybrid.return_value = [
         VectorSearchResult(
             chunk_id="chunk_1",

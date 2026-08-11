@@ -7,7 +7,9 @@ Uses lazy imports to prevent dependency failures on systems without the Azure SD
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
 from mentera_rag.storage.base import BaseObjectStore
 
 logger = logging.getLogger(__name__)
@@ -31,7 +33,7 @@ class AzureBlobStorageStore(BaseObjectStore):
         self._service_client = None
 
     @property
-    def service_client(self):
+    def service_client(self) -> Any:
         """Lazy-initialize BlobServiceClient."""
         if self._service_client is None:
             try:
@@ -72,7 +74,7 @@ class AzureBlobStorageStore(BaseObjectStore):
                 blob_name=key,
                 account_key=account_key,
                 permission=BlobSasPermissions(write=True),
-                expiry=datetime.now(timezone.utc) + timedelta(seconds=expires_in),
+                expiry=datetime.now(UTC) + timedelta(seconds=expires_in),
             )
             return f"{blob_client.url}?{sas_token}"
         except Exception as e:

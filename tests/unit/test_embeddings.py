@@ -67,16 +67,21 @@ class TestEmbeddingFactory:
     @patch("mentera_rag.embeddings.azure_openai.AzureOpenAI")
     def test_get_azure_provider(self, mock_azure):
         from mentera_rag.embeddings.azure_openai import AzureOpenAIEmbeddingProvider
-        provider = EmbeddingFactory.get_provider(provider_type="azure", model_name="text-embedding-3-small")
+
+        provider = EmbeddingFactory.get_provider(
+            provider_type="azure", model_name="text-embedding-3-small"
+        )
         assert isinstance(provider, AzureOpenAIEmbeddingProvider)
 
     @patch("vertexai.init")
     @patch("vertexai.language_models.TextEmbeddingModel.from_pretrained")
     def test_get_gcp_provider(self, mock_from_pretrained, mock_vertex_init):
         from mentera_rag.embeddings.gcp_vertex import GCPVertexEmbeddingProvider
-        provider = EmbeddingFactory.get_provider(provider_type="gcp", model_name="text-embedding-005")
-        # Trigger model load to assert GCPVertexEmbeddingProvider type check works
-        model = provider.model
+
+        provider = EmbeddingFactory.get_provider(
+            provider_type="gcp", model_name="text-embedding-005"
+        )
+        assert provider.model is not None
         assert isinstance(provider, GCPVertexEmbeddingProvider)
 
     def test_unsupported_provider_raises_error(self):

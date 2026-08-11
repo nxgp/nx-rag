@@ -5,8 +5,6 @@ Unit tests for Experiment Runner, Matrix Expander, and Comparison Reporter.
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from mentera_rag.experiments.matrix import MatrixExpander
 from mentera_rag.experiments.reporter import ComparisonReporter
 from mentera_rag.experiments.runner import ExperimentRunner

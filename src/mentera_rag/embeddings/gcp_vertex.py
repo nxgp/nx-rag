@@ -7,6 +7,9 @@ using Vertex AI's text-embedding models (e.g. text-embedding-005).
 
 import logging
 from typing import Any
+
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 from mentera_rag.embeddings.base import BaseEmbeddingProvider
 
 logger = logging.getLogger(__name__)
@@ -39,7 +42,7 @@ class GCPVertexEmbeddingProvider(BaseEmbeddingProvider):
         self.project_id = project_id
         self.location = location
         self.batch_size = min(batch_size, 250)
-        self._model = None
+        self._model: Any = None
 
     @property
     def model(self) -> Any:
@@ -56,12 +59,9 @@ class GCPVertexEmbeddingProvider(BaseEmbeddingProvider):
             except Exception as e:
                 logger.error("Failed to initialize GCP Vertex AI TextEmbeddingModel: %s", e)
                 raise RuntimeError(
-                    "GCP Vertex AI SDK initialization failed. "
-                    "Ensure google-cloud-aiplatform is installed and GCP credentials are configured."
+                    "GCP Vertex AI SDK initialization failed. Ensure credentials are configured."
                 ) from e
         return self._model
-
-    from tenacity import retry, stop_after_attempt, wait_exponential
 
     @retry(
         stop=stop_after_attempt(3),

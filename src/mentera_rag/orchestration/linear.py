@@ -6,6 +6,7 @@ Returns retrieved contexts directly without LLM answer generation.
 """
 
 from typing import Any
+
 from mentera_rag.retrieval.base import BaseReranker, BaseRetriever
 
 

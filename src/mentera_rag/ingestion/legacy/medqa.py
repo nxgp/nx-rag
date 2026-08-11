@@ -45,12 +45,12 @@ class MedQALoader(BaseDatasetLoader):
             query_id = f"medqa_q_{idx}_{self._hash_text(question_text)}"
             queries.append(
                 Query(
-                    id=query_id,
+                    query_id=query_id,
                     text=question_text,
-                    options=options_dict,
-                    gold_answer=gold_answer,
-                    source="medqa",
                     metadata={
+                        "options": options_dict,
+                        "gold_answer": gold_answer,
+                        "source": "medqa",
                         "meta_info": item.get("meta_info", ""),
                         "answer_idx": item.get("answer_idx", ""),
                     },

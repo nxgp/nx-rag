@@ -1,6 +1,7 @@
-import sys
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from mentera_rag.embeddings.gcp_vertex import GCPVertexEmbeddingProvider
 
 

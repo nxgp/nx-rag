@@ -6,6 +6,7 @@ Formula: RRF_Score(d) = sum(1 / (60 + rank(d)))
 """
 
 from collections import defaultdict
+from typing import Any
 
 from mentera_rag.chunking.schemas import Chunk
 from mentera_rag.retrieval.base import BaseRetriever
@@ -26,7 +27,9 @@ class EnsembleRetriever(BaseRetriever):
         self.weights = weights or [1.0] * len(retrievers)
         self.rrf_k = rrf_k
 
-    def retrieve(self, query: str, top_k: int = 10, filters: dict | None = None) -> list[Chunk]:
+    def retrieve(
+        self, query: str, top_k: int = 10, filters: dict[str, Any] | None = None
+    ) -> list[Chunk]:
         """Execute all retrievers in parallel and combine ranks with RRF math."""
         rrf_scores: dict[str, float] = defaultdict(float)
         chunk_map: dict[str, Chunk] = {}

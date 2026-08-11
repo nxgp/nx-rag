@@ -3,6 +3,7 @@ Unit tests for Qdrant Vector Store Adapter and Factory.
 """
 
 from unittest.mock import MagicMock, patch
+
 import pytest
 
 from mentera_rag.chunking.schemas import Chunk

@@ -1,11 +1,13 @@
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
-from mentera_rag.storage.local import LocalStorageStore
-from mentera_rag.storage.factory import StorageFactory
-from mentera_rag.storage.s3 import S3StorageStore
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from mentera_rag.storage.azure_blob import AzureBlobStorageStore
+from mentera_rag.storage.factory import StorageFactory
 from mentera_rag.storage.gcs import GCSStorageStore
+from mentera_rag.storage.local import LocalStorageStore
+from mentera_rag.storage.s3 import S3StorageStore
 
 
 @pytest.fixture
@@ -82,7 +84,10 @@ def test_storage_factory_azure_missing_conn_string(mock_getenv):
 @patch("os.getenv")
 def test_storage_factory_azure_success(mock_getenv):
     """Test factory resolution of AzureBlobStorageStore."""
-    mock_getenv.return_value = "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=key;EndpointSuffix=core.windows.net"
+    mock_getenv.return_value = (
+        "DefaultEndpointsProtocol=https;AccountName=test;"
+        "AccountKey=key;EndpointSuffix=core.windows.net"
+    )
     # Patch service client property since connection string is dummy
     with patch.object(AzureBlobStorageStore, "service_client", MagicMock()):
         store = StorageFactory.get_store(provider_type="azure_blob")

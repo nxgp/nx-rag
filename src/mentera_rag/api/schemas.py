@@ -6,6 +6,7 @@ and `/query` API endpoints.
 """
 
 from typing import Any
+
 from pydantic import BaseModel, Field
 
 

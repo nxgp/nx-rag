@@ -6,11 +6,10 @@ Retrieval, and Orchestration, with strict verification of tenant isolation.
 """
 
 from unittest.mock import MagicMock, patch
-import pytest
 
 from mentera_rag.chunking.recursive import RecursiveCharacterChunker
-from mentera_rag.chunking.schemas import Chunk, Document as ChunkDocument
-from mentera_rag.embeddings.factory import EmbeddingFactory
+from mentera_rag.chunking.schemas import Chunk
+from mentera_rag.chunking.schemas import Document as ChunkDocument
 from mentera_rag.evaluation.evaluator import RAGEvaluator
 from mentera_rag.orchestration.agentic import AgenticRAGGraph
 from mentera_rag.orchestration.linear import LinearRAGPipeline
@@ -18,7 +17,6 @@ from mentera_rag.retrieval.bm25 import BM25Retriever
 from mentera_rag.retrieval.dense import DenseRetriever
 from mentera_rag.retrieval.ensemble import EnsembleRetriever
 from mentera_rag.vector_stores.factory import VectorStoreFactory
-from mentera_rag.vector_stores.schemas import VectorSearchResult
 
 
 class TestE2EPipelineIntegration:

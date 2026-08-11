@@ -5,6 +5,8 @@ Translates query text into a vector using EmbeddingProvider (M3) and searches
 nearest neighbors in BaseVectorStore (M4).
 """
 
+from typing import Any
+
 from mentera_rag.chunking.schemas import Chunk
 from mentera_rag.embeddings.base import BaseEmbeddingProvider
 from mentera_rag.retrieval.base import BaseRetriever
@@ -24,7 +26,9 @@ class DenseRetriever(BaseRetriever):
         self.embed_provider = embed_provider
         self.vector_store = vector_store
 
-    def retrieve(self, query: str, top_k: int = 10, filters: dict | None = None) -> list[Chunk]:
+    def retrieve(
+        self, query: str, top_k: int = 10, filters: dict[str, Any] | None = None
+    ) -> list[Chunk]:
         """Embed query and search vector store nearest neighbors."""
         # Step 1: Embed query into a dense vector
         query_vector = self.embed_provider.embed_query(query)

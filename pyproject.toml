@@ -88,15 +88,17 @@ src = ["src", "tests"]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "C4"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
-packages = ["mentera_rag"]
+mypy_path = "src"
+explicit_package_bases = true
 
 [[tool.mypy.overrides]]
 module = [
   "boto3.*",
   "botocore.*",
   "google.*",
+  "azure.*",
   "qdrant_client.*",
   "rank_bm25.*",
   "yaml.*",
@@ -104,6 +106,10 @@ module = [
   "pytesseract.*",
   "PIL.*",
   "mlflow.*",
+  "datasets.*",
+  "torch.*",
+  "sentence_transformers.*",
+  "numpy.*",
 ]
 ignore_missing_imports = true
 

@@ -72,8 +72,7 @@ class ImageParser(BaseDocumentParser):
         ext = file_path.suffix.lower()
         if ext not in SUPPORTED_IMAGE_EXTENSIONS:
             raise ValueError(
-                f"Unsupported image format '{ext}'. "
-                f"Supported: {sorted(SUPPORTED_IMAGE_EXTENSIONS)}"
+                f"Unsupported image format '{ext}'. Supported: {sorted(SUPPORTED_IMAGE_EXTENSIONS)}"
             )
 
         extra_meta = metadata or {}

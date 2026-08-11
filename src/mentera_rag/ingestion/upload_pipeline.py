@@ -11,20 +11,20 @@ Orchestrates the entire flow of document ingestion:
   7. Index the chunks and vectors into Qdrant with full multi-tenant payloads
 """
 
-import os
 import hashlib
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Any
 
-from mentera_rag.config.settings import settings
-from mentera_rag.storage.factory import StorageFactory
-from mentera_rag.embeddings.factory import EmbeddingFactory
-from mentera_rag.vector_stores.factory import VectorStoreFactory
-from mentera_rag.parsing.factory import ParserFactory, SUPPORTED_EXTENSIONS
 from mentera_rag.chunking.recursive import RecursiveCharacterChunker
-from mentera_rag.chunking.schemas import Document, Chunk
+from mentera_rag.chunking.schemas import Chunk, Document
+from mentera_rag.config.settings import settings
+from mentera_rag.embeddings.factory import EmbeddingFactory
+from mentera_rag.parsing.factory import SUPPORTED_EXTENSIONS, ParserFactory
+from mentera_rag.storage.factory import StorageFactory
+from mentera_rag.vector_stores.factory import VectorStoreFactory
 
 logger = logging.getLogger(__name__)
 
@@ -101,33 +101,41 @@ class UploadPipeline:
         # Check if this file_hash has already been indexed for this tenant in Qdrant
         try:
             from qdrant_client import models
-            filter_conditions = [
-                models.FieldCondition(key="tenant_id", match=models.MatchValue(value=tenant_id)),
-                models.FieldCondition(key="file_hash", match=models.MatchValue(value=file_hash)),
-            ]
-            scroll_result = self.vector_store.client.scroll(
-                collection_name=self.vector_store.collection_name,
-                scroll_filter=models.Filter(must=filter_conditions),
-                limit=1,
-                with_payload=True,
-            )
-            if scroll_result and scroll_result[0]:
-                existing_record = scroll_result[0][0]
-                existing_payload = existing_record.payload or {}
-                logger.info(
-                    "Document '%s' (hash: %s) already indexed for tenant '%s'. Skipping ingestion.",
-                    filename,
-                    file_hash,
-                    tenant_id,
+
+            client = getattr(self.vector_store, "client", None)
+            if client is not None:
+                cond1 = models.FieldCondition(
+                    key="tenant_id", match=models.MatchValue(value=tenant_id)
                 )
-                elapsed_ms = (time.perf_counter() - start_time) * 1000.0
-                return {
-                    "document_id": existing_payload.get("doc_id", doc_id),
-                    "chunk_count": 0,  # 0 new chunks indexed
-                    "embedding_model": existing_payload.get("embedding_model", self.embedding.model_name),
-                    "status": "already_indexed",
-                    "processing_time_ms": round(elapsed_ms, 2),
-                }
+                cond2 = models.FieldCondition(
+                    key="file_hash", match=models.MatchValue(value=file_hash)
+                )
+                filter_conditions: list[Any] = [cond1, cond2]
+                scroll_result = client.scroll(
+                    collection_name=self.vector_store.collection_name,
+                    scroll_filter=models.Filter(must=filter_conditions),
+                    limit=1,
+                    with_payload=True,
+                )
+                if scroll_result and scroll_result[0]:
+                    existing_record = scroll_result[0][0]
+                    existing_payload = existing_record.payload or {}
+                    logger.info(
+                        "Document '%s' (hash: %s) already indexed for tenant '%s'.",
+                        filename,
+                        file_hash,
+                        tenant_id,
+                    )
+                    elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+                    return {
+                        "document_id": existing_payload.get("doc_id", doc_id),
+                        "chunk_count": 0,  # 0 new chunks indexed
+                        "embedding_model": existing_payload.get(
+                            "embedding_model", self.embedding.model_name
+                        ),
+                        "status": "already_indexed",
+                        "processing_time_ms": round(elapsed_ms, 2),
+                    }
         except Exception as e:
             logger.warning("Deduplication check failed, proceeding with ingestion: %s", e)
 
@@ -193,7 +201,9 @@ class UploadPipeline:
             vectors = self.embedding.embed_documents(chunk_texts)
 
             # 9. Index in Qdrant
-            logger.info("Indexing chunks into Qdrant collection: %s", self.vector_store.collection_name)
+            logger.info(
+                "Indexing chunks into Qdrant collection: %s", self.vector_store.collection_name
+            )
             self.vector_store.index_chunks(all_chunks, vectors)
 
         finally:

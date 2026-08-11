@@ -14,7 +14,7 @@ try:
 
     HAS_TORCH = True
 except ImportError:
-    torch = None  # type: ignore[assignment]
+    torch = None
     HAS_TORCH = False
 
 try:
@@ -22,7 +22,7 @@ try:
 
     HAS_CROSS_ENCODER = True
 except ImportError:
-    CrossEncoder = None  # type: ignore[misc]
+    CrossEncoder = None
     HAS_CROSS_ENCODER = False
 
 from mentera_rag.chunking.schemas import Chunk

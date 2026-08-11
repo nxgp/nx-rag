@@ -9,6 +9,7 @@ Uses direct boto3 bedrock-runtime API calls to execute embedding models:
 import json
 
 import boto3
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from mentera_rag.embeddings.base import BaseEmbeddingProvider
 
@@ -23,7 +24,7 @@ class BedrockEmbeddingProvider(BaseEmbeddingProvider):
         model_name: str = "amazon.titan-embed-text-v2:0",
         dimension: int = 1024,
         region_name: str = "us-east-1",
-        batch_size: int = 64,
+        batch_size: int = 32,
     ):
         super().__init__(model_name=model_name, dimension=dimension)
         self.region_name = region_name
@@ -31,8 +32,6 @@ class BedrockEmbeddingProvider(BaseEmbeddingProvider):
 
         # Instantiate raw boto3 bedrock-runtime client
         self.client = boto3.client("bedrock-runtime", region_name=self.region_name)
-
-    from tenacity import retry, stop_after_attempt, wait_exponential
 
     @retry(
         stop=stop_after_attempt(3),

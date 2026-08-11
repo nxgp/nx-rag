@@ -9,29 +9,30 @@ Provides APIs for:
 - local storage PUT helper (/api/v1/upload/local)
 """
 
-import time
 import json
-import uuid
 import logging
+import time
+import uuid
 from typing import Any
-from fastapi import FastAPI, HTTPException, status, Query, Request, Response
 
-from mentera_rag.config.settings import settings
+from fastapi import FastAPI, HTTPException, Request, Response, status
+
 from mentera_rag.api.schemas import (
-    PresignRequest,
-    PresignResponse,
     IngestRequest,
     IngestResponse,
+    PresignRequest,
+    PresignResponse,
     QueryRequest,
     QueryResponse,
     RetrievedContext,
 )
-from mentera_rag.storage.factory import StorageFactory
+from mentera_rag.config.settings import settings
 from mentera_rag.embeddings.factory import EmbeddingFactory
-from mentera_rag.vector_stores.factory import VectorStoreFactory
 from mentera_rag.ingestion.upload_pipeline import UploadPipeline
-from mentera_rag.utils.logging import setup_logging, request_id_var
+from mentera_rag.storage.factory import StorageFactory
+from mentera_rag.utils.logging import request_id_var, setup_logging
 from mentera_rag.utils.rate_limit import TokenBucketRateLimiter
+from mentera_rag.vector_stores.factory import VectorStoreFactory
 
 # 1. Initialize structured logging configuration on import
 setup_logging(settings.LOG_LEVEL)
@@ -118,16 +119,19 @@ def health_check() -> dict[str, Any]:
 
     # Check Qdrant connection
     try:
-        store = VectorStoreFactory.get_vector_store()
-        store.client.get_collections()
+        from mentera_rag.vector_stores.qdrant_store import QdrantVectorStore
+
+        v_store = VectorStoreFactory.get_vector_store()
+        if isinstance(v_store, QdrantVectorStore):
+            v_store.client.get_collections()
     except Exception as e:
         logger.error("Healthcheck: Qdrant connection failed: %s", e)
         qdrant_status = "unhealthy"
 
     # Check Storage connection
     try:
-        store = StorageFactory.get_store()
-        store.exists("health-check-nonexistent-key-123")
+        s_store = StorageFactory.get_store()
+        s_store.exists("health-check-nonexistent-key-123")
     except Exception as e:
         logger.error("Healthcheck: Storage connection failed: %s", e)
         storage_status = "unhealthy"
@@ -160,17 +164,20 @@ def get_upload_presigned_url(request: PresignRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="Filename cannot be empty")
 
     import os
+
     _, ext = os.path.splitext(filename)
     ext = ext.lower()
 
     if ext not in settings.ALLOWED_FILE_EXTENSIONS:
+        allowed = settings.ALLOWED_FILE_EXTENSIONS
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported file extension '{ext}'. Allowed: {settings.ALLOWED_FILE_EXTENSIONS}",
+            detail=f"Unsupported file extension '{ext}'. Allowed: {allowed}",
         )
 
     # Validate tenant format (alphanumeric, hyphens, underscores)
     import re
+
     if not re.match(r"^[a-zA-Z0-9\-_]+$", request.tenant_id):
         raise HTTPException(
             status_code=400,
@@ -198,7 +205,7 @@ def get_upload_presigned_url(request: PresignRequest) -> dict[str, Any]:
         raise HTTPException(
             status_code=500,
             detail="Internal storage error generating upload parameters.",
-        )
+        ) from e
 
 
 @app.post("/ingest", response_model=IngestResponse)
@@ -225,15 +232,15 @@ def trigger_file_ingestion(request: IngestRequest) -> dict[str, Any]:
         raise HTTPException(
             status_code=404,
             detail=f"Source file not found in storage. Ensure upload completed. Error: {e}",
-        )
+        ) from e
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error("Ingestion failed: %s", e)
         raise HTTPException(
             status_code=500,
             detail=f"Failed to process and index document. Error: {e}",
-        )
+        ) from e
 
 
 @app.post("/query", response_model=QueryResponse)
@@ -278,8 +285,7 @@ def query_context(request: QueryRequest) -> dict[str, Any]:
         # Filter by tags if list provided
         if request.tags:
             search_results = [
-                res for res in search_results
-                if any(tag in res.tags for tag in request.tags)
+                res for res in search_results if any(tag in res.tags for tag in request.tags)
             ]
 
         # 4. Map to RetrievedContext schemas
@@ -315,7 +321,7 @@ def query_context(request: QueryRequest) -> dict[str, Any]:
         raise HTTPException(
             status_code=500,
             detail=f"Context retrieval error: {e}",
-        )
+        ) from e
 
 
 @app.put("/api/v1/upload/local", status_code=status.HTTP_201_CREATED)
@@ -342,4 +348,4 @@ async def upload_local_file(request: Request, key: str) -> dict[str, Any]:
         return {"status": "success", "storage_key": key, "bytes_written": len(body)}
     except Exception as e:
         logger.error("Local PUT helper upload failed: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

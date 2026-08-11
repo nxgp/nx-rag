@@ -3,6 +3,7 @@ Unit tests for Bedrock LLM Provider.
 """
 
 from unittest.mock import MagicMock, patch
+
 from mentera_rag.generation.bedrock import BedrockLLMProvider
 
 

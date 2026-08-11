@@ -6,7 +6,11 @@ using Azure OpenAI Service embedding deployments.
 """
 
 import logging
+from typing import Any
+
 from openai import AzureOpenAI
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 from mentera_rag.embeddings.base import BaseEmbeddingProvider
 
 logger = logging.getLogger(__name__)
@@ -46,7 +50,7 @@ class AzureOpenAIEmbeddingProvider(BaseEmbeddingProvider):
         if not endpoint or not api_key:
             logger.warning(
                 "Azure OpenAI endpoint or API key not provided. "
-                "API calls will fail unless configured via env variables (AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY)."
+                "API calls will fail unless configured via env variables."
             )
 
         self.client = AzureOpenAI(
@@ -54,8 +58,6 @@ class AzureOpenAIEmbeddingProvider(BaseEmbeddingProvider):
             api_key=api_key,
             api_version=api_version,
         )
-
-    from tenacity import retry, stop_after_attempt, wait_exponential
 
     @retry(
         stop=stop_after_attempt(3),
@@ -78,7 +80,7 @@ class AzureOpenAIEmbeddingProvider(BaseEmbeddingProvider):
         # Batch process text items
         for i in range(0, len(texts), self.batch_size):
             batch = texts[i : i + self.batch_size]
-            kwargs = {
+            kwargs: dict[str, Any] = {
                 "input": batch,
                 "model": self.deployment_name,
             }

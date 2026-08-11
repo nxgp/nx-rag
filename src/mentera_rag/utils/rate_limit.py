@@ -5,9 +5,13 @@ Provides rate-limiting protection for sensitive ingestion and presign endpoints.
 Rate limiting can be configured per-tenant or per-client IP.
 """
 
+import logging
 import time
 from collections import defaultdict
+
 from fastapi import HTTPException, status
+
+logger = logging.getLogger(__name__)
 
 
 class TokenBucketRateLimiter:
@@ -44,7 +48,7 @@ class TokenBucketRateLimiter:
         self._last_checked[key] = now
 
         if current_tokens < 1.0:
-            logger_key = f"rate_limit_exceeded:{key}"
+            logger.warning("Rate limit exceeded for key: %s", key)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Too many requests. Rate limit exceeded.",

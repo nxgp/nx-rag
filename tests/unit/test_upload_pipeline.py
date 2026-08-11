@@ -1,18 +1,26 @@
-import pytest
-import hashlib
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from mentera_rag.ingestion.upload_pipeline import UploadPipeline
 
 
 @pytest.fixture
 def mock_pipeline_components():
     """Mock storage, embedding, vector store, and parser components."""
-    with patch("mentera_rag.ingestion.upload_pipeline.StorageFactory.get_store") as mock_get_store, \
-         patch("mentera_rag.ingestion.upload_pipeline.EmbeddingFactory.get_provider") as mock_get_embed, \
-         patch("mentera_rag.ingestion.upload_pipeline.VectorStoreFactory.get_vector_store") as mock_get_qdrant, \
-         patch("mentera_rag.ingestion.upload_pipeline.ParserFactory.get_parser") as mock_get_parser, \
-         patch("mentera_rag.ingestion.upload_pipeline.ParserFactory.is_supported") as mock_is_supported:
-
+    with (
+        patch("mentera_rag.ingestion.upload_pipeline.StorageFactory.get_store") as mock_get_store,
+        patch(
+            "mentera_rag.ingestion.upload_pipeline.EmbeddingFactory.get_provider"
+        ) as mock_get_embed,
+        patch(
+            "mentera_rag.ingestion.upload_pipeline.VectorStoreFactory.get_vector_store"
+        ) as mock_get_qdrant,
+        patch("mentera_rag.ingestion.upload_pipeline.ParserFactory.get_parser") as mock_get_parser,
+        patch(
+            "mentera_rag.ingestion.upload_pipeline.ParserFactory.is_supported"
+        ) as mock_is_supported,
+    ):
         mock_store = MagicMock()
         mock_get_store.return_value = mock_store
 
@@ -51,6 +59,7 @@ def test_upload_pipeline_success(mock_pipeline_components):
 
     # Mock parser output: one page
     from mentera_rag.parsing.base import ParsedPage
+
     components["parser"].parse.return_value = [
         ParsedPage(content="Parsed document page text.", page_number=1)
     ]
