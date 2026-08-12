@@ -67,6 +67,15 @@ class RetrievedContext(BaseModel):
 class QueryResponse(BaseModel):
     status: str = Field(default="success", description="Status code")
     query: str = Field(..., description="Original search query")
+    final_query: str | None = Field(
+        default=None, description="Final search query after adaptive rewriting (agentic RAG)"
+    )
+    retry_count: int | None = Field(
+        default=None, description="Number of query rewriting retries executed (agentic RAG)"
+    )
+    pipeline_type: str = Field(
+        default="linear", description="Pipeline type executed ('linear' or 'agentic')"
+    )
     retrieved_contexts: list[RetrievedContext] = Field(
         ..., description="Standardized list of relevant document chunks"
     )

@@ -116,7 +116,7 @@ def test_query_endpoint(mock_get_qdrant, mock_get_embedding):
     mock_qdrant = MagicMock()
     from mentera_rag.vector_stores.schemas import VectorSearchResult
 
-    mock_qdrant.search_hybrid.return_value = [
+    results = [
         VectorSearchResult(
             chunk_id="chunk_1",
             doc_id="doc_1",
@@ -129,6 +129,8 @@ def test_query_endpoint(mock_get_qdrant, mock_get_embedding):
             page_number=3,
         )
     ]
+    mock_qdrant.search_dense.return_value = results
+    mock_qdrant.search_hybrid.return_value = results
     mock_get_qdrant.return_value = mock_qdrant
 
     payload = {

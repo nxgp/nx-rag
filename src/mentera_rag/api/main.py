@@ -243,10 +243,9 @@ def trigger_file_ingestion(request: IngestRequest) -> dict[str, Any]:
         ) from e
 
 
-@app.post("/query", response_model=QueryResponse)
-def query_context(request: QueryRequest) -> dict[str, Any]:
+def _execute_query_orchestration(request: QueryRequest, mode: str = "linear") -> dict[str, Any]:
     """
-    Endpoint 3: Retrieve top-K relevant text passages using tenant-level payload filters.
+    Core helper executing query retrieval via LinearRAGPipeline or AgenticRAGGraph orchestration.
     """
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="Query string cannot be empty")
@@ -254,56 +253,65 @@ def query_context(request: QueryRequest) -> dict[str, Any]:
     start_time = time.perf_counter()
 
     try:
-        # 1. Initialize vector store & embed query
+        from mentera_rag.orchestration.agentic import AgenticRAGGraph
+        from mentera_rag.orchestration.linear import LinearRAGPipeline
+        from mentera_rag.retrieval.dense import DenseRetriever
+
+        # 1. Initialize vector store & embed provider
         vector_store = VectorStoreFactory.get_vector_store()
         embedding_provider = EmbeddingFactory.get_provider()
-
-        query_vector = embedding_provider.embed_query(request.query)
+        retriever = DenseRetriever(embed_provider=embedding_provider, vector_store=vector_store)
 
         # 2. Build tenant isolation filters
-        # tenant_id and provider_id are mandatory
         filters: dict[str, Any] = {
             "tenant_id": request.tenant_id,
             "provider_id": request.provider_id,
         }
-
-        # Optional filters
         if request.patient_id:
             filters["patient_id"] = request.patient_id
         if request.collection_name:
             filters["collection_name"] = request.collection_name
 
-        # 3. Perform Qdrant hybrid search
-        search_results = vector_store.search_hybrid(
-            query_text=request.query,
-            query_vector=query_vector,
-            top_k=request.top_k,
-            alpha=0.5,
-            filters=filters,
-        )
+        # 3. Execute target orchestration strategy
+        final_query = None
+        retry_count = None
+
+        if mode == "agentic":
+            from mentera_rag.generation.bedrock import BedrockLLMProvider
+
+            llm_provider = BedrockLLMProvider()
+            graph = AgenticRAGGraph(retriever=retriever, llm_provider=llm_provider, max_retries=2)
+            result = graph.run(query=request.query, filters=filters)
+            chunks = result.get("retrieved_chunks", [])
+            final_query = result.get("final_query")
+            retry_count = result.get("retry_count", 0)
+        else:
+            pipeline = LinearRAGPipeline(retriever=retriever)
+            result = pipeline.run(query=request.query, top_k=request.top_k, filters=filters)
+            chunks = result.get("retrieved_chunks", [])
 
         # Filter by tags if list provided
         if request.tags:
-            search_results = [
-                res for res in search_results if any(tag in res.tags for tag in request.tags)
-            ]
+            chunks = [c for c in chunks if any(tag in (c.tags or []) for tag in request.tags)]
 
-        # 4. Map to RetrievedContext schemas
+        # 4. Map Chunk objects to RetrievedContext schemas
         retrieved_contexts = [
             RetrievedContext(
-                chunk_id=res.chunk_id,
-                doc_id=res.doc_id,
-                text=res.text,
-                score=res.score,
+                chunk_id=chunk.chunk_id,
+                doc_id=chunk.doc_id,
+                text=chunk.text,
+                score=getattr(chunk, "score", 0.0) or 0.0,
                 metadata={
-                    "page_number": res.page_number,
-                    "document_type": res.document_type,
-                    "tags": res.tags,
-                    "upload_timestamp": str(res.upload_timestamp) if res.upload_timestamp else None,
-                    **res.metadata,
+                    "page_number": chunk.page_number,
+                    "document_type": chunk.document_type,
+                    "tags": chunk.tags,
+                    "upload_timestamp": str(chunk.upload_timestamp)
+                    if chunk.upload_timestamp
+                    else None,
+                    **chunk.metadata,
                 },
             )
-            for res in search_results
+            for chunk in chunks
         ]
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
@@ -311,17 +319,45 @@ def query_context(request: QueryRequest) -> dict[str, Any]:
         return {
             "status": "success",
             "query": request.query,
+            "final_query": final_query,
+            "retry_count": retry_count,
+            "pipeline_type": mode,
             "retrieved_contexts": retrieved_contexts,
             "total_results": len(retrieved_contexts),
             "latency_ms": round(elapsed_ms, 2),
         }
 
     except Exception as e:
-        logger.error("Query retrieval failed: %s", e)
+        logger.error("%s RAG query failed: %s", mode.capitalize(), e)
         raise HTTPException(
             status_code=500,
-            detail=f"Context retrieval error: {e}",
+            detail=f"{mode.capitalize()} context retrieval error: {e}",
         ) from e
+
+
+@app.post("/query", response_model=QueryResponse)
+def query_context(request: QueryRequest) -> dict[str, Any]:
+    """
+    Default Query Endpoint: Executes Linear RAG context retrieval pipeline.
+    """
+    return _execute_query_orchestration(request, mode="linear")
+
+
+@app.post("/query/linear", response_model=QueryResponse)
+def query_linear_context(request: QueryRequest) -> dict[str, Any]:
+    """
+    Linear RAG Endpoint: Low-latency Retrieve -> Rerank direct context pipeline.
+    """
+    return _execute_query_orchestration(request, mode="linear")
+
+
+@app.post("/query/agentic", response_model=QueryResponse)
+def query_agentic_context(request: QueryRequest) -> dict[str, Any]:
+    """
+    Agentic RAG Endpoint: Self-correcting LangGraph state graph with document grading
+    and adaptive query re-writing loops.
+    """
+    return _execute_query_orchestration(request, mode="agentic")
 
 
 @app.put("/api/v1/upload/local", status_code=status.HTTP_201_CREATED)

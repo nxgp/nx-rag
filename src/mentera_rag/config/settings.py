@@ -60,6 +60,10 @@ class Settings(BaseSettings):
 
     # AWS Bedrock
     AWS_REGION: str = Field(default="us-east-1", description="AWS Region for Bedrock calls")
+    BEDROCK_LLM_MODEL_ID: str = Field(
+        default="us.anthropic.claude-3-haiku-20240307-v1:0",
+        description="Default Bedrock LLM model ID for query rewriting and agentic RAG",
+    )
 
     # Azure OpenAI
     AZURE_OPENAI_ENDPOINT: str | None = Field(

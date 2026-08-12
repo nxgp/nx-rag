@@ -61,9 +61,15 @@ def test_agentic_rag_graph_run(mock_chunks):
     mock_retriever = MagicMock()
     mock_retriever.retrieve.return_value = mock_chunks
 
-    # Mock LLM for query rewriting
+    def mock_generate(prompt: str = "", system_prompt: str | None = None) -> str:
+        if system_prompt and "relevance" in system_prompt.lower():
+            if "unmatched" in prompt.lower():
+                return '{"relevant": false}'
+            return '{"relevant": true}'
+        return "rewritten query"
+
     mock_llm = MagicMock()
-    mock_llm.generate.return_value = "rewritten query"
+    mock_llm.generate.side_effect = mock_generate
 
     pipeline = AgenticRAGGraph(
         retriever=mock_retriever,

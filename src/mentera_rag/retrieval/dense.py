@@ -42,23 +42,23 @@ class DenseRetriever(BaseRetriever):
 
         # Step 3: Map VectorSearchResult items back to Chunk objects
         chunks: list[Chunk] = []
-        for i, res in enumerate(search_results):
-            chunks.append(
-                Chunk(
-                    chunk_id=res.chunk_id,
-                    doc_id=res.doc_id,
-                    chunk_index=i,
-                    text=res.text,
-                    tenant_id=res.tenant_id,
-                    provider_id=res.provider_id,
-                    patient_id=res.patient_id,
-                    document_type=res.document_type,
-                    collection_name=res.collection_name,
-                    tags=res.tags,
-                    upload_timestamp=res.upload_timestamp,
-                    page_number=res.page_number,
-                    token_count=len(res.text.split()),
-                    metadata=res.metadata,
-                )
+        for i, res in enumerate(search_results or []):
+            c = Chunk(
+                chunk_id=res.chunk_id,
+                doc_id=res.doc_id,
+                chunk_index=i,
+                text=res.text,
+                tenant_id=res.tenant_id,
+                provider_id=res.provider_id,
+                patient_id=res.patient_id,
+                document_type=res.document_type,
+                collection_name=res.collection_name,
+                tags=res.tags,
+                upload_timestamp=res.upload_timestamp,
+                page_number=res.page_number,
+                token_count=len(res.text.split()),
+                score=getattr(res, "score", 0.0) or 0.0,
+                metadata=res.metadata,
             )
+            chunks.append(c)
         return chunks

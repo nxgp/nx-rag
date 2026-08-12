@@ -93,6 +93,12 @@ class UploadPipeline:
         logger.info("Downloading file from storage: %s", storage_key)
         file_bytes = self.storage.download(storage_key)
 
+        if not file_bytes:
+            raise FileNotFoundError(
+                f"File '{storage_key}' in storage contains 0 bytes. "
+                "Ensure the file was uploaded to the presigned upload URL before ingestion."
+            )
+
         # 3. Compute SHA-256 file hash & document ID
         file_hash = hashlib.sha256(file_bytes).hexdigest()
         doc_id = f"doc_{tenant_id}_{file_hash[:16]}"

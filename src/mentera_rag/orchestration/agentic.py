@@ -8,15 +8,18 @@ isolation filters through the retrieval nodes.
 Returns retrieved and graded contexts without final LLM answer generation.
 """
 
-from typing import Any, TypedDict
+from typing import Any
 
 from langgraph.graph import END, StateGraph
+from typing_extensions import TypedDict
 
 from mentera_rag.chunking.schemas import Chunk
 from mentera_rag.generation.base import BaseLLMProvider
 from mentera_rag.generation.prompts import (
     QUERY_REWRITER_SYSTEM_PROMPT,
     QUERY_REWRITER_USER_PROMPT,
+    RELEVANCE_GRADER_SYSTEM_PROMPT,
+    RELEVANCE_GRADER_USER_PROMPT,
 )
 from mentera_rag.retrieval.base import BaseRetriever
 
@@ -59,17 +62,65 @@ class AgenticRAGGraph:
         return {"documents": chunks}
 
     def _grade_documents_node(self, state: RAGState) -> dict[str, Any]:
-        """Graph Node: Check if retrieved documents contain relevant terms."""
-        query_words = set(state["query"].lower().split())
-        has_overlap = False
+        """
+        Graph Node: Grade retrieved document passages for semantic relevance using LLM Evaluator.
+        """
+        documents = state.get("documents", [])
+        if not documents:
+            return {"is_relevant": False}
 
-        for doc in state["documents"]:
-            doc_words = set(doc.text.lower().split())
-            if len(query_words.intersection(doc_words)) > 0:
-                has_overlap = True
-                break
+        query = state["query"]
+        relevant_found = False
 
-        return {"is_relevant": has_overlap}
+        # Grade top retrieved passages using LLM Evaluator
+        for doc in documents[:3]:
+            try:
+                prompt = RELEVANCE_GRADER_USER_PROMPT.format(document=doc.text[:1000], query=query)
+                res = self.llm_provider.generate(
+                    prompt=prompt, system_prompt=RELEVANCE_GRADER_SYSTEM_PROMPT
+                )
+                res_str = res.strip().lower()
+                if "true" in res_str or '"relevant": true' in res_str or "yes" in res_str:
+                    relevant_found = True
+                    break
+            except Exception:
+                # Deterministic term overlap fallback (filtering stop words)
+                stop_words = {
+                    "a",
+                    "an",
+                    "the",
+                    "is",
+                    "are",
+                    "was",
+                    "were",
+                    "for",
+                    "and",
+                    "or",
+                    "in",
+                    "on",
+                    "at",
+                    "to",
+                    "of",
+                    "what",
+                    "with",
+                    "do",
+                    "does",
+                    "by",
+                    "i",
+                    "you",
+                    "it",
+                    "this",
+                    "that",
+                    "how",
+                    "can",
+                }
+                query_words = set(query.lower().split()) - stop_words
+                doc_words = set(doc.text.lower().split()) - stop_words
+                if len(query_words.intersection(doc_words)) > 0:
+                    relevant_found = True
+                    break
+
+        return {"is_relevant": relevant_found}
 
     def _rewrite_query_node(self, state: RAGState) -> dict[str, Any]:
         """Graph Node: Rewrite query to increase search recall."""

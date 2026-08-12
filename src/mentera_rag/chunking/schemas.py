@@ -81,6 +81,7 @@ class Chunk(BaseModel):
     )
     doc_id: str = Field(..., description="Foreign key to parent Document.doc_id")
     text: str = Field(..., description="Text content of this chunk")
+    score: float = Field(default=0.0, description="Relevance / similarity score from retrieval")
     chunk_index: int = Field(
         ..., description="Zero-based sequential index within the parent document"
     )
