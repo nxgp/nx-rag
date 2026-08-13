@@ -2,11 +2,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from mentera_rag.config.settings import settings
 from mentera_rag.ingestion.upload_pipeline import UploadPipeline
 
 
 @pytest.fixture
-def mock_pipeline_components():
+def mock_pipeline_components(tmp_path):
     """Mock storage, embedding, vector store, and parser components."""
     with (
         patch("mentera_rag.ingestion.upload_pipeline.StorageFactory.get_store") as mock_get_store,
@@ -20,6 +21,7 @@ def mock_pipeline_components():
         patch(
             "mentera_rag.ingestion.upload_pipeline.ParserFactory.is_supported"
         ) as mock_is_supported,
+        patch.object(settings, "UPLOAD_DIR", str(tmp_path / "mentera_test_uploads")),
     ):
         mock_store = MagicMock()
         mock_get_store.return_value = mock_store
